@@ -4,8 +4,8 @@ import { useAuth } from '../../context/AuthContext';
 import { api } from '../../services/mockApi';
 
 export default function AdminDashboard() {
-  const { usuarioActual } = useAuth();
-  const nombreAdmin = usuarioActual?.nombre || 'Administrador';
+  const { usuario } = useAuth();
+  const nombreAdmin = usuario?.nombre || 'Administrador';
 
   const [cargando, setCargando] = useState(true);
   const [pedidosCount, setPedidosCount] = useState(0);

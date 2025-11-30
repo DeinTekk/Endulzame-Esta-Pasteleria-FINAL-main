@@ -15,6 +15,7 @@ interface AuthContextType {
     comuna: string;
     direccion?: string;
   }) => Promise<void>;
+  updateUser: (usuario: Usuario) => void;
   logout: () => void;
   isAuthenticated: boolean;
 }
@@ -65,6 +66,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const updateUser = (usuarioActualizado: Usuario) => {
+    localStorage.setItem('usuario', JSON.stringify(usuarioActualizado));
+    setUsuario(usuarioActualizado);
+  };
+
   const logout = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('usuario');
@@ -77,6 +83,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         usuario,
         login,
         register,
+        updateUser,
         logout,
         isAuthenticated: !!usuario,
       }}

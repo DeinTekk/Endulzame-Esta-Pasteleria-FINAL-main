@@ -12,7 +12,7 @@ interface ModalBlogProps {
 }
 
 export default function ModalBlog({ publicacion, onClose }: ModalBlogProps) {
-  const { usuarioActual } = useAuth();
+  const { usuario } = useAuth();
   const { showNotification } = useNotification();
   const [comentarios, setComentarios] = useState<ComentarioBlog[]>([]);
   const [nuevoComentario, setNuevoComentario] = useState("");
@@ -33,10 +33,10 @@ export default function ModalBlog({ publicacion, onClose }: ModalBlogProps) {
 
   const handleSubmitComentario = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!nuevoComentario.trim() || !publicacion || !usuarioActual) return;
+    if (!nuevoComentario.trim() || !publicacion || !usuario) return;
 
     const comentario: ComentarioBlog = {
-      usuario: usuarioActual.nombre,
+      usuario: usuario.nombre,
       texto: nuevoComentario
     };
 
@@ -83,7 +83,7 @@ export default function ModalBlog({ publicacion, onClose }: ModalBlogProps) {
           )}
         </div>
 
-        {!usuarioActual ? (
+        {!usuario ? (
           <div id="mensajeSeccionComentario" className="text-muted text-center my-3">
             <p>Para dejar un comentario, <Link to="/ingreso" onClick={onClose}>inicia sesión aquí</Link>.</p>
           </div>

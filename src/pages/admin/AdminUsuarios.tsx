@@ -8,7 +8,7 @@ import { useNotification } from '../../context/NotificationContext';
 export default function AdminUsuarios() {
   const [usuarios, setUsuarios] = useState<Usuario[]>([]);
   const [cargando, setCargando] = useState(true);
-  const { usuarioActual } = useAuth();
+  const { usuario } = useAuth();
   const { showNotification } = useNotification();
 
   useEffect(() => {
@@ -29,7 +29,7 @@ export default function AdminUsuarios() {
   };
 
   const handleEliminar = (correo: string) => {
-    if (correo === usuarioActual?.correo) {
+    if (correo === usuario?.correo) {
       showNotification('No puedes eliminarte a ti mismo.', 'error');
       return;
     }

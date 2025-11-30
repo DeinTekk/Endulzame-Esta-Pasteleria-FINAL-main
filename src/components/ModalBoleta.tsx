@@ -11,10 +11,10 @@ interface ModalBoletaProps {
 
 export default function ModalBoleta({ pedido, onClose }: ModalBoletaProps) {
   const { showNotification } = useNotification();
-  const { usuarioActual } = useAuth();
+  const { usuario } = useAuth();
 
   const handleDescargarBoleta = () => {
-    if (!pedido || !usuarioActual) return;
+    if (!pedido || !usuario) return;
 
     const contenido = `
 Boleta de Compra Endúlzame esta
@@ -31,7 +31,7 @@ Puntos usados: -${pedido.puntosUsados || 0}
 Total final: ${formatearPrecio(pedido.totalFinal)}
 ----------------------------
 Puntos ganados en esta compra: ${pedido.puntosGanados}
-Nuevo saldo de puntos: ${usuarioActual.puntos || 0}
+Nuevo saldo de puntos: ${usuario.puntos || 0}
 ----------------------------
 Gracias por su compra.
 `;
@@ -51,7 +51,7 @@ Gracias por su compra.
     }
   };
 
-  if (!pedido || !usuarioActual) return null;
+  if (!pedido || !usuario) return null;
 
   return (
     <Modal show={pedido !== null} onHide={onClose} centered>
@@ -87,7 +87,7 @@ Gracias por su compra.
         <p className="text-center small mt-2">
           ¡Has ganado <span id="boletaPuntosGanados">{pedido.puntosGanados}</span> puntos en esta compra!
         </p>
-        <p className="text-center small">Tu nuevo saldo es: <span id="boletaSaldoFinal">{usuarioActual.puntos || 0}</span> puntos.</p>
+        <p className="text-center small">Tu nuevo saldo es: <span id="boletaSaldoFinal">{usuario.puntos || 0}</span> puntos.</p>
       </Modal.Body>
       <Modal.Footer>
         <Button variant="secondary" onClick={onClose}>Cerrar</Button>

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useNotification } from '../context/NotificationContext';
 import { validarCorreo } from '../utils/validation';
@@ -9,6 +9,7 @@ export default function Ingreso() {
   const [contrasena, setContrasena] = useState('');
   const { login } = useAuth();
   const { showNotification } = useNotification();
+  const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -22,7 +23,14 @@ export default function Ingreso() {
       showNotification('El correo debe ser de los dominios @duoc.cl, @profesor.duoc.cl o @gmail.com.', 'error');
       return;
     }
-    await login(correo, contrasena);
+
+    try {
+      await login(correo, contrasena);
+      showNotification('¡Bienvenido! Has iniciado sesión correctamente.', 'success');
+      navigate('/');
+    } catch (error: any) {
+      showNotification(error.message || 'Error al iniciar sesión', 'error');
+    }
   };
 
   return (
