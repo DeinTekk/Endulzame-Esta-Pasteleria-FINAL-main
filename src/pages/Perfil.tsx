@@ -8,7 +8,7 @@ import { Modal, Button, Tab, Tabs } from 'react-bootstrap';
 import { api } from '../services/mockApi';
 
 function TabDatosPersonales() {
-  const { usuarioActual, updateUser } = useAuth();
+  const { usuario, updateUser } = useAuth();
   const { showNotification } = useNotification();
 
   const [nombre, setNombre] = useState('');
@@ -16,15 +16,15 @@ function TabDatosPersonales() {
   const [contrasena, setContrasena] = useState('');
 
   useEffect(() => {
-    if (usuarioActual) {
-      setNombre(usuarioActual.nombre || '');
-      setRut(usuarioActual.rut || '');
+    if (usuario) {
+      setNombre(usuario.nombre || '');
+      setRut(usuario.rut || '');
     }
-  }, [usuarioActual]);
+  }, [usuario]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!usuarioActual) return;
+    if (!usuario) return;
 
     if (!validarRut(rut)) {
       showNotification('El RUT ingresado no es válido.', 'error');
@@ -35,14 +35,14 @@ function TabDatosPersonales() {
       return;
     }
 
-    const usuarioActualizado: Usuario = {
-      ...usuarioActual,
+    const usuarioizado: Usuario = {
+      ...usuario,
       nombre: nombre,
       rut: rut,
-      contrasena: contrasena ? contrasena : usuarioActual.contrasena
+      contrasena: contrasena ? contrasena : usuario.contrasena
     };
 
-    updateUser(usuarioActualizado);
+    updateUser(usuarioizado);
     setContrasena('');
   };
 
@@ -65,7 +65,7 @@ function TabDatosPersonales() {
           type="email"
           className="form-control"
           id="correoPerfil"
-          value={usuarioActual?.correo || ''}
+          value={usuario?.correo || ''}
           disabled
         />
       </div>
@@ -97,7 +97,7 @@ function TabDatosPersonales() {
 }
 
 function TabDirecciones() {
-  const { usuarioActual, updateUser } = useAuth();
+  const { usuario, updateUser } = useAuth();
   const { showNotification } = useNotification();
 
   const [calle, setCalle] = useState('');
@@ -108,7 +108,7 @@ function TabDirecciones() {
   const [regionSeleccionada, setRegionSeleccionada] = useState('');
   const [comunaSeleccionada, setComunaSeleccionada] = useState('');
 
-  const direcciones = usuarioActual?.direcciones || [];
+  const direcciones = usuario?.direcciones || [];
 
   useEffect(() => {
     api.getRegionesYComunas().then(setRegiones);
@@ -127,7 +127,7 @@ function TabDirecciones() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!usuarioActual || !calle || !comunaSeleccionada || !regionSeleccionada) {
+    if (!usuario || !calle || !comunaSeleccionada || !regionSeleccionada) {
       showNotification('Por favor, completa calle, región y comuna.', 'error');
       return;
     }
@@ -140,7 +140,7 @@ function TabDirecciones() {
       )
       : [...direcciones, nuevaDireccion];
 
-    updateUser({ ...usuarioActual, direcciones: nuevasDirecciones });
+    updateUser({ ...usuario, direcciones: nuevasDirecciones });
     limpiarFormulario();
   };
 
@@ -161,9 +161,9 @@ function TabDirecciones() {
 
   const handleEliminar = (indice: number) => {
     if (window.confirm('¿Estás seguro de que quieres eliminar esta dirección?')) {
-      if (!usuarioActual) return;
+      if (!usuario) return;
       const nuevasDirecciones = direcciones.filter((_, i) => i !== indice);
-      updateUser({ ...usuarioActual, direcciones: nuevasDirecciones });
+      updateUser({ ...usuario, direcciones: nuevasDirecciones });
       showNotification('Dirección eliminada.', 'success');
     }
   };
@@ -234,19 +234,19 @@ function TabDirecciones() {
 }
 
 function TabHistorial({ onAbrirModal }: { onAbrirModal: (pedido: Pedido) => void }) {
-  const { usuarioActual } = useAuth();
+  const { usuario } = useAuth();
   const [historial, setHistorial] = useState<Pedido[]>([]);
   const [cargando, setCargando] = useState(true);
 
   useEffect(() => {
-    if (usuarioActual?.correo) {
-      api.getPedidosByCliente(usuarioActual.correo)
+    if (usuario?.correo) {
+      api.getPedidosByCliente(usuario.correo)
         .then((pedidos: Pedido[]) => {
           setHistorial(pedidos);
           setCargando(false);
         });
     }
-  }, [usuarioActual?.correo]);
+  }, [usuario?.correo]);
 
   if (cargando) {
     return <p>Cargando historial...</p>;
@@ -374,10 +374,10 @@ function ModalSeguimiento({ pedido, onClose }: { pedido: Pedido | null, onClose:
 }
 
 export default function Perfil() {
-  const { usuarioActual } = useAuth();
+  const { usuario } = useAuth();
   const [pedidoModal, setPedidoModal] = useState<Pedido | null>(null);
 
-  if (!usuarioActual) {
+  if (!usuario) {
     return <p>Cargando perfil...</p>;
   }
 
@@ -390,7 +390,7 @@ export default function Perfil() {
               <h2 className="card-title text-center mb-4" style={{ color: 'var(--color-primario)' }}>Mi Perfil</h2>
               <div className="alert alert-success d-flex align-items-center gap-2" role="alert">
                 <i className="bi bi-star-fill"></i>
-                <span id="puntos-fidelizacion">Puntos de fidelización: {usuarioActual.puntos || 0}</span>
+                <span id="puntos-fidelizacion">Puntos de fidelización: {usuario.puntos || 0}</span>
               </div>
 
               <Tabs defaultActiveKey="perfil" id="pestanasPerfil" className="mb-3" justify>

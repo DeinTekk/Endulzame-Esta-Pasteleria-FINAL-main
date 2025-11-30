@@ -37,7 +37,7 @@ function RenderResenas({ resenas }: { resenas: Resena[] }) {
 
 export default function ModalDetalleProducto({ producto, onClose, onResenaAgregada }: ModalDetalleProductoProps) {
   const { agregarAlCarrito, estaEnStock } = useCart();
-  const { usuarioActual } = useAuth();
+  const { usuario } = useAuth();
   const { showNotification } = useNotification();
   const { productos: productosEnVivo } = useProductContext();
   
@@ -56,7 +56,7 @@ export default function ModalDetalleProducto({ producto, onClose, onResenaAgrega
     if (!productoVivo) return;
     setIsAgregando(true);
 
-    if (!usuarioActual) {
+    if (!usuario) {
       showNotification('Debes iniciar sesión para comprar.', 'error');
       onClose();
       setIsAgregando(false);
@@ -81,7 +81,7 @@ export default function ModalDetalleProducto({ producto, onClose, onResenaAgrega
   };
 
   const handleResenaSubmit = (e: React.FormEvent) => {
-    if (!productoVivo || !usuarioActual) return;
+    if (!productoVivo || !usuario) return;
     e.preventDefault();
 
     if (calificacionResena < 1 || calificacionResena > 5) {
@@ -94,7 +94,7 @@ export default function ModalDetalleProducto({ producto, onClose, onResenaAgrega
     }
 
     const nuevaResena: Resena = {
-      usuario: usuarioActual.nombre,
+      usuario: usuario.nombre,
       calificacion: calificacionResena,
       texto: textoResena
     };
@@ -183,7 +183,7 @@ export default function ModalDetalleProducto({ producto, onClose, onResenaAgrega
           <RenderResenas resenas={productoVivo.resenas} />
         </div>
         
-        {!usuarioActual ? (
+        {!usuario ? (
           <p id="mensaje-seccion-resena" className="text-muted text-center fst-italic">
             Debes <Link to="/ingreso" onClick={onClose}>iniciar sesión</Link> para dejar una reseña.
           </p>

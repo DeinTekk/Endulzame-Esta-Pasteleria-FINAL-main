@@ -2,13 +2,13 @@ import { Navigate, Outlet } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
 function RutaAdmin() {
-  const { usuarioActual } = useAuth();
+  const { usuario } = useAuth();
 
-  if (!usuarioActual) {
+  if (!usuario) {
     return <Navigate to="/ingreso" replace />;
   }
 
-  if (!usuarioActual.esAdmin) {
+  if (!usuario.esAdmin) {
     return <Navigate to="/" replace />;
   }
 

@@ -5,18 +5,18 @@ import { formatearPrecio } from '../utils/format';
 import { Dropdown, Nav, Navbar } from 'react-bootstrap';
 
 function MenuAutenticacion() {
-  const { usuarioActual, logout } = useAuth();
+  const { usuario, logout } = useAuth();
   const navigate = useNavigate();
 
-  if (usuarioActual) {
+  if (usuario) {
     return (
       <Dropdown as={Nav.Item}>
         <Dropdown.Toggle as={Nav.Link} id="menuDesplegableUsuario" style={{ color: 'var(--color-texto-principal)' }}>
-          Hola, {usuarioActual.nombre}
+          Hola, {usuario.nombre}
         </Dropdown.Toggle>
         <Dropdown.Menu align="end">
           <Dropdown.Item onClick={() => navigate('/perfil')}>Mi Perfil</Dropdown.Item>
-          {usuarioActual.esAdmin && (
+          {usuario.esAdmin && (
             <Dropdown.Item onClick={() => navigate('/admin')}>Panel de Admin</Dropdown.Item>
           )}
           <Dropdown.Divider />

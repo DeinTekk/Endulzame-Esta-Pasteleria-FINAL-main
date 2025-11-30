@@ -16,7 +16,7 @@ const sucursales = [
 ];
 
 export default function Compra() {
-  const { usuarioActual } = useAuth();
+  const { usuario } = useAuth();
   const { carrito, totalCarrito, limpiarCarrito } = useCart();
   const { showNotification } = useNotification();
   const navigate = useNavigate();
@@ -50,7 +50,7 @@ export default function Compra() {
   }, [regionSeleccionada, regiones]);
 
 
-  const puntosUsuario = usuarioActual?.puntos || 0;
+  const puntosUsuario = usuario?.puntos || 0;
 
   const totalFinal = useMemo(() => {
     let total = totalCarrito;
@@ -62,7 +62,7 @@ export default function Compra() {
 
   const handleFinalizarCompra = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!usuarioActual) {
+    if (!usuario) {
       showNotification("Error: No se encontró usuario.", 'error');
       navigate('/ingreso');
       return;
@@ -96,7 +96,7 @@ export default function Compra() {
         }
       } else {
         const indice = parseInt(opcionDireccion.replace('guardada-', ''));
-        const dir = usuarioActual.direcciones?.[indice];
+        const dir = usuario.direcciones?.[indice];
         if (dir) {
           direccionSeleccionada = `${dir.calle}, ${dir.ciudad}, ${dir.region}`;
         } else {
@@ -125,7 +125,7 @@ export default function Compra() {
       puntosGanados: puntosGanados,
       estado: 'En preparación',
       ...detallesEntrega,
-      correoCliente: usuarioActual.correo
+      correoCliente: usuario.correo
     };
 
     try {
@@ -222,7 +222,7 @@ export default function Compra() {
                         onChange={(e) => setOpcionDireccion(e.target.value)}
                       >
                         <option value="nueva">Usar una nueva dirección</option>
-                        {usuarioActual?.direcciones?.map((dir: Direccion, indice: number) => ( 
+                        {usuario?.direcciones?.map((dir: Direccion, indice: number) => ( 
                           <option key={indice} value={`guardada-${indice}`}>
                             {dir.calle}, {dir.ciudad}, {dir.region}
                           </option>

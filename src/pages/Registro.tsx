@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useNotification } from '../context/NotificationContext';
 import { validarRut, validarCorreo, autoFormatRut } from '../utils/validation';
@@ -8,6 +8,7 @@ import { api } from '../services/mockApi';
 export default function Registro() {
   const { register } = useAuth();
   const { showNotification } = useNotification();
+  const navigate = useNavigate();
 
   const [nombre, setNombre] = useState('');
   const [apellidos, setApellidos] = useState('');
@@ -79,6 +80,8 @@ export default function Registro() {
         region: regionSeleccionada,
         comuna: comunaSeleccionada
       });
+      showNotification('¡Registro exitoso! Bienvenido a Endúlzame Esta.', 'success');
+      navigate('/');
     } catch (error) {
       showNotification((error as Error).message, 'error');
       console.error(error);
