@@ -114,9 +114,9 @@ const saveComentariosDB = (comentarios: Record<string, ComentarioBlog[]>) => loc
 
 export const api = {
   
-  getProductos: async (): Promise<Producto[]> => getProductosDB(),
+  getProductos: async (): Promise<Producto[]> => getProductosDB().filter(p => !p.eliminado),
   getProductoById: async (id: number): Promise<Producto | undefined> => getProductosDB().find(p => p.id === id),
-  getCategoriasUnicas: async (): Promise<string[]> => Array.from(new Set(getProductosDB().map(p => p.categoria))).filter(Boolean),
+  getCategoriasUnicas: async (): Promise<string[]> => Array.from(new Set(getProductosDB().filter(p => !p.eliminado).map(p => p.categoria))).filter(Boolean),
   saveProductos: async (productos: Producto[]): Promise<void> => {
     saveProductosDB(productos);
   },
@@ -136,8 +136,11 @@ export const api = {
   },
   deleteProducto: async (id: number): Promise<void> => {
     const productos = getProductosDB();
-    const productosFiltrados = productos.filter(p => p.id !== id);
-    saveProductosDB(productosFiltrados);
+    const indice = productos.findIndex(p => p.id === id);
+    if (indice !== -1) {
+      productos[indice].eliminado = true;
+      saveProductosDB(productos);
+    }
   },
   addResena: async (productoId: number, resena: Resena): Promise<Producto> => {
     const productos = getProductosDB();

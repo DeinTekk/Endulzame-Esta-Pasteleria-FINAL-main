@@ -28,11 +28,22 @@ export default function AdminUsuarios() {
       });
   };
 
-  const handleEliminar = (correo: string) => {
+  const handleEliminar = async (correo: string) => {
     if (correo === usuario?.correo) {
       showNotification('No puedes eliminarte a ti mismo.', 'error');
       return;
     }
+
+    // Verificar si es el último administrador
+    const usuarioAEliminar = usuarios.find(u => u.correo === correo);
+    if (usuarioAEliminar?.esAdmin) {
+      const cantidadAdmins = usuarios.filter(u => u.esAdmin).length;
+      if (cantidadAdmins <= 1) {
+        showNotification('No puedes eliminar al único administrador del sistema.', 'error');
+        return;
+      }
+    }
+
     if (window.confirm(`¿Estás seguro de que quieres eliminar al usuario con correo: ${correo}?`)) {
       api.deleteUsuario(correo)
         .then(() => {
@@ -76,22 +87,26 @@ export default function AdminUsuarios() {
                 <td colSpan={5} className="text-center text-muted">No hay usuarios registrados.</td>
               </tr>
             ) : (
-              usuarios.map(usuario => {
-                const rolUsuario = usuario.esAdmin ? 'Administrador' : (usuario.esVendedor ? 'Vendedor' : 'Cliente');
+              usuarios.map(usuarioItem => {
+                const rolUsuario = usuarioItem.esAdmin ? 'Administrador' : (usuarioItem.esVendedor ? 'Vendedor' : 'Cliente');
+                const cantidadAdmins = usuarios.filter(u => u.esAdmin).length;
+                const esUnicoAdmin = usuarioItem.esAdmin && cantidadAdmins <= 1;
+                
                 return (
-                  <tr key={usuario.correo}>
-                    <td>{usuario.rut || 'N/A'}</td>
-                    <td>{usuario.nombre} {usuario.apellidos || ''}</td>
-                    <td>{usuario.correo}</td>
+                  <tr key={usuarioItem.correo}>
+                    <td>{usuarioItem.rut || 'N/A'}</td>
+                    <td>{usuarioItem.nombre} {usuarioItem.apellidos || ''}</td>
+                    <td>{usuarioItem.correo}</td>
                     <td>{rolUsuario}</td>
                     <td>
-                      <Link to={`/admin/usuarios/editar/${usuario.correo}`} className="btn btn-sm btn-warning me-2">
+                      <Link to={`/admin/usuarios/editar/${usuarioItem.correo}`} className="btn btn-sm btn-warning me-2">
                         <i className="bi bi-pencil"></i>
                       </Link>
                       <button
                         className="btn btn-sm btn-danger"
-                        onClick={() => handleEliminar(usuario.correo)}
-                        disabled={usuario.correo === 'admin@endulzameesta.cl'}
+                        onClick={() => handleEliminar(usuarioItem.correo)}
+                        disabled={esUnicoAdmin}
+                        title={esUnicoAdmin ? 'No se puede eliminar al único administrador' : ''}
                       >
                         <i className="bi bi-trash"></i>
                       </button>

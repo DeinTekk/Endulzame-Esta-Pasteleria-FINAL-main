@@ -104,12 +104,22 @@ export default function FormularioUsuario() {
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!validarRut(usuario.rut)) {
       showNotification('El RUN ingresado no es válido.', 'error');
       return;
+    }
+
+    // Proteger al último administrador
+    if (esModoEdicion && esUsuarioActual && esAdminActual && usuario.esAdmin && !usuario.esAdmin) {
+      const todosUsuarios = await api.getUsuarios();
+      const cantidadAdmins = todosUsuarios.filter(u => u.esAdmin).length;
+      if (cantidadAdmins <= 1) {
+        showNotification('No puedes quitarte los permisos de administrador porque eres el único administrador del sistema.', 'error');
+        return;
+      }
     }
     if (!esModoEdicion && !validarCorreo(usuario.correo)) {
       showNotification('Correo inválido. Dominios permitidos: @duoc.cl, @profesor.duoc.cl, @gmail.com.', 'error');

@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useNotification } from '../context/NotificationContext';
-import { validarRut, validarCorreo, autoFormatRut } from '../utils/validation';
+import { validarRutConEdad, validarCorreo, autoFormatRut } from '../utils/validation';
 import { api } from '../services/mockApi';
 
 export default function Registro() {
@@ -49,8 +49,9 @@ export default function Registro() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!validarRut(rut)) {
-      showNotification('El RUT ingresado no es válido.', 'error');
+    const resultadoValidacion = validarRutConEdad(rut);
+    if (!resultadoValidacion.valido) {
+      showNotification(resultadoValidacion.mensaje || 'El RUT ingresado no es válido.', 'error');
       return;
     }
     if (contrasena.length < 4 || contrasena.length > 10) {

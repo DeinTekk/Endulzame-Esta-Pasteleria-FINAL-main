@@ -18,6 +18,7 @@ export interface Producto {
   origen: string;
   unidad: string;
   resenas: Resena[];
+  eliminado?: boolean;
 }
 
 export interface Usuario {
