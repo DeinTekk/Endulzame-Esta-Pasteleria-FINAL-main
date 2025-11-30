@@ -1,21 +1,19 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { api } from '../../services/mockApi';
+import axios from 'axios';
 import type { Producto } from '../../types';
 import { formatearPrecio } from '../../utils/format';
 import { useNotification } from '../../context/NotificationContext';
+
+const API_URL = 'http://localhost:8080/api';
 
 const productoVacio: Partial<Producto> = {
   nombre: '',
   descripcion: '',
   precio: 0,
   stock: 0,
-  stockCritico: null,
   categoria: '',
-  origen: '',
-  unidad: '',
-  etiqueta: 'Normal',
-  imagen: 'img/default.jpg'
+  imagen: ''
 };
 
 export default function FormularioProducto() {
@@ -25,41 +23,40 @@ export default function FormularioProducto() {
   const { showNotification } = useNotification();
 
   const [producto, setProducto] = useState<Partial<Producto>>(productoVacio);
-  const [descuento, setDescuento] = useState(0);
   const [categorias, setCategorias] = useState<string[]>([]);
   const [cargando, setCargando] = useState(true);
 
   useEffect(() => {
-    setCargando(true);
-    api.getCategoriasUnicas().then(setCategorias);
+    cargarDatos();
+  }, [id]);
 
-    if (esModoEdicion && id) {
-      api.getProductoById(Number(id)).then(p => {
-        if (p) {
-          const desc = p.precioConDescuento !== undefined
-            ? Math.round(((p.precio - p.precioConDescuento) / p.precio) * 100)
-            : 0;
+  const cargarDatos = async () => {
+    try {
+      setCargando(true);
 
-          setProducto(p);
-          setDescuento(desc);
-        }
-        setCargando(false);
-      });
-    } else {
-      setProducto(productoVacio);
-      setDescuento(0);
+      // Cargar categorías
+      const responseCategorias = await axios.get(`${API_URL}/productos/categorias`);
+      setCategorias(responseCategorias.data);
+
+      // Si es modo edición, cargar el producto
+      if (esModoEdicion && id) {
+        const responseProducto = await axios.get(`${API_URL}/productos/${id}`);
+        setProducto(responseProducto.data);
+      } else {
+        setProducto(productoVacio);
+      }
+    } catch (error) {
+      console.error("Error al cargar datos:", error);
+      showNotification('Error al cargar los datos.', 'error');
+    } finally {
       setCargando(false);
     }
-  }, [id, esModoEdicion]);
+  };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target;
 
-    const valor = (type === 'number' && name !== 'stockCritico')
-      ? Number(value)
-      : (name === 'stockCritico' && value === '')
-        ? null
-        : value;
+    const valor = type === 'number' ? Number(value) : value;
 
     setProducto(prev => ({
       ...prev,
@@ -67,61 +64,63 @@ export default function FormularioProducto() {
     }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!producto.nombre || producto.nombre.length < 3) {
-      showNotification("El nombre es requerido.", 'error');
+    // Validaciones
+    if (!producto.nombre || producto.nombre.trim().length < 3) {
+      showNotification("El nombre debe tener al menos 3 caracteres.", 'error');
       return;
     }
     if (!producto.categoria) {
       showNotification("La categoría es requerida.", 'error');
       return;
     }
+    if (!producto.precio || producto.precio <= 0) {
+      showNotification("El precio debe ser mayor a 0.", 'error');
+      return;
+    }
+    if (producto.stock === undefined || producto.stock < 0) {
+      showNotification("El stock no puede ser negativo.", 'error');
+      return;
+    }
 
-    const precioNum = Number(producto.precio) || 0;
-    const precioConDescuento = descuento > 0 ? precioNum * (1 - descuento / 100) : undefined;
-    const etiqueta = descuento > 0 ? 'Oferta' : 'Normal';
+    try {
+      const productoFinal = {
+        ...producto,
+        nombre: producto.nombre.trim(),
+        descripcion: producto.descripcion?.trim() || '',
+        precio: Number(producto.precio),
+        stock: Number(producto.stock),
+        categoria: producto.categoria,
+        imagen: producto.imagen || 'https://via.placeholder.com/400x300?text=Sin+Imagen'
+      };
 
-    const productoBase = {
-      ...productoVacio,
-      ...producto,
-    };
+      if (esModoEdicion && id) {
+        // Actualizar producto existente
+        await axios.put(`${API_URL}/productos/${id}`, productoFinal);
+        showNotification('¡Producto actualizado correctamente!', 'success');
+      } else {
+        // Crear nuevo producto
+        await axios.post(`${API_URL}/productos`, productoFinal);
+        showNotification('¡Producto creado correctamente!', 'success');
+      }
 
-    const productoFinal: Producto = {
-      id: esModoEdicion ? producto.id! : Date.now(),
-      nombre: productoBase.nombre!,
-      descripcion: productoBase.descripcion!,
-      categoria: productoBase.categoria!,
-      origen: productoBase.origen!,
-      unidad: productoBase.unidad!,
-      imagen: productoBase.imagen || 'img/default.jpg',
-      resenas: esModoEdicion ? (producto.resenas || []) : [],
-
-      precio: precioNum,
-      stock: Number(producto.stock) || 0,
-      stockCritico: producto.stockCritico ? Number(producto.stockCritico) : null,
-      precioConDescuento: precioConDescuento,
-      etiqueta: etiqueta,
-    };
-
-    const promesa = esModoEdicion
-      ? api.updateProducto(productoFinal)
-      : api.createProducto(productoFinal);
-
-    promesa
-      .then(() => {
-        showNotification(esModoEdicion ? '¡Producto editado!' : '¡Producto creado!', 'success');
-        navigate('/admin/productos');
-      })
-      .catch(err => {
-        console.error(err);
-        showNotification('Error al guardar el producto.', 'error');
-      });
+      navigate('/admin/productos');
+    } catch (error) {
+      console.error("Error al guardar producto:", error);
+      showNotification('Error al guardar el producto.', 'error');
+    }
   };
 
   if (cargando) {
-    return <p>Cargando formulario...</p>;
+    return (
+      <div className="container-fluid text-center py-5">
+        <div className="spinner-border text-primary" role="status">
+          <span className="visually-hidden">Cargando...</span>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -137,113 +136,144 @@ export default function FormularioProducto() {
 
       <div className="card shadow-sm">
         <div className="card-body">
-          <form id="formularioCrearProducto" onSubmit={handleSubmit} noValidate>
+          <form onSubmit={handleSubmit} noValidate>
 
             <div className="row">
               <div className="col-md-6 mb-3">
-                <label htmlFor="id" className="form-label">Código (ID)</label>
+                <label htmlFor="nombre" className="form-label">Nombre del Producto *</label>
                 <input
-                  type="number"
+                  type="text"
                   className="form-control"
-                  id="id"
-                  name="id"
-                  value={producto.id || ''}
+                  id="nombre"
+                  name="nombre"
+                  value={producto.nombre || ''}
                   onChange={handleChange}
-                  placeholder={esModoEdicion ? '' : 'Dejar vacío para auto-generar'}
-                  disabled={esModoEdicion}
+                  required
+                  placeholder="Ej: Torta de Chocolate"
                 />
               </div>
               <div className="col-md-6 mb-3">
-                <label htmlFor="nombre" className="form-label">Nombre</label>
-                <input type="text" className="form-control" id="nombre" name="nombre" value={producto.nombre} onChange={handleChange} required />
+                <label htmlFor="categoria" className="form-label">Categoría *</label>
+                <select
+                  className="form-select"
+                  id="categoria"
+                  name="categoria"
+                  value={producto.categoria || ''}
+                  onChange={handleChange}
+                  required
+                >
+                  <option value="">Seleccionar categoría</option>
+                  {categorias.map(cat => (
+                    <option key={cat} value={cat}>{cat}</option>
+                  ))}
+                  <option value="nueva">+ Agregar nueva categoría</option>
+                </select>
+                {producto.categoria === 'nueva' && (
+                  <input
+                    type="text"
+                    className="form-control mt-2"
+                    placeholder="Nombre de la nueva categoría"
+                    onChange={(e) => setProducto(prev => ({ ...prev, categoria: e.target.value }))}
+                  />
+                )}
               </div>
             </div>
 
             <div className="mb-3">
               <label htmlFor="descripcion" className="form-label">Descripción</label>
-              <textarea className="form-control" id="descripcion" name="descripcion" rows={3} value={producto.descripcion} onChange={handleChange}></textarea>
+              <textarea
+                className="form-control"
+                id="descripcion"
+                name="descripcion"
+                rows={3}
+                value={producto.descripcion || ''}
+                onChange={handleChange}
+                placeholder="Describe el producto..."
+              ></textarea>
             </div>
 
             <div className="row">
-              <div className="col-md-4 mb-3">
-                <label htmlFor="precio" className="form-label">Precio</label>
-                <input type="number" className="form-control" id="precio" name="precio" value={producto.precio} onChange={handleChange} required min="0" />
-              </div>
-              <div className="col-md-4 mb-3">
-                <label htmlFor="descuento" className="form-label">Descuento (%)</label>
-                <input type="number" className="form-control" id="descuento" name="descuento" value={descuento} onChange={(e) => setDescuento(Number(e.target.value))} min="0" max="100" />
-              </div>
-              <div className="col-md-4 mb-3">
-                <label>Precio Final</label>
+              <div className="col-md-6 mb-3">
+                <label htmlFor="precio" className="form-label">Precio (CLP) *</label>
                 <input
-                  type="text"
+                  type="number"
                   className="form-control"
-                  value={formatearPrecio(descuento > 0 ? (producto.precio || 0) * (1 - descuento / 100) : (producto.precio || 0))}
-                  readOnly
-                  disabled
+                  id="precio"
+                  name="precio"
+                  value={producto.precio || 0}
+                  onChange={handleChange}
+                  required
+                  min="0"
+                  step="100"
                 />
-              </div>
-            </div>
-
-            <div className="row">
-              <div className="col-md-6 mb-3">
-                <label htmlFor="stock" className="form-label">Stock</label>
-                <input type="number" className="form-control" id="stock" name="stock" value={producto.stock} onChange={handleChange} required min="0" />
+                <small className="text-muted">
+                  Precio final: {formatearPrecio(producto.precio || 0)}
+                </small>
               </div>
               <div className="col-md-6 mb-3">
-                <label htmlFor="stockCritico" className="form-label">Stock Crítico (Opcional)</label>
-                <input type="number" className="form-control" id="stockCritico" name="stockCritico" value={producto.stockCritico || ''} onChange={handleChange} min="0" />
-              </div>
-            </div>
-
-            <div className="row">
-              <div className="col-md-6 mb-3">
-                <label htmlFor="categoria" className="form-label">Categoría</label>
-                <select className="form-select" id="categoria" name="categoria" value={producto.categoria} onChange={handleChange} required>
-                  <option value="" disabled>Selecciona una categoría</option>
-                  {categorias.map(cat => (
-                    <option key={cat} value={cat}>{cat}</option>
-                  ))}
-                </select>
-                <small>¿Categoría nueva? Escríbela en el campo de al lado.</small>
-              </div>
-              <div className="col-md-6 mb-3">
-                <label htmlFor="categoriaNueva" className="form-label">O escribe una nueva categoría</label>
+                <label htmlFor="stock" className="form-label">Stock (unidades) *</label>
                 <input
-                  type="text"
+                  type="number"
                   className="form-control"
-                  id="categoriaNueva"
-                  placeholder="Ej: Congelados"
-                  onChange={(e) => setProducto(prev => ({ ...prev, categoria: e.target.value }))}
+                  id="stock"
+                  name="stock"
+                  value={producto.stock || 0}
+                  onChange={handleChange}
+                  required
+                  min="0"
                 />
-              </div>
-            </div>
-
-            <div className="row">
-              <div className="col-md-6 mb-3">
-                <label htmlFor="origen" className="form-label">Origen</label>
-                <input type="text" className="form-control" id="origen" name="origen" value={producto.origen} onChange={handleChange} required />
-              </div>
-              <div className="col-md-6 mb-3">
-                <label htmlFor="unidad" className="form-label">Unidad</label>
-                <input type="text" className="form-control" id="unidad" name="unidad" value={producto.unidad} onChange={handleChange} required placeholder="Ej: kg, bolsa, frasco" />
+                {producto.stock !== undefined && producto.stock < 10 && (
+                  <small className="text-warning">
+                    <i className="bi bi-exclamation-triangle me-1"></i>
+                    Stock bajo
+                  </small>
+                )}
               </div>
             </div>
 
             <div className="mb-3">
-              <label htmlFor="imagen" className="form-label">Ruta de Imagen</label>
-              <input type="text" className="form-control" id="imagen" name="imagen" value={producto.imagen} onChange={handleChange} placeholder="Ej: img/prod1.jpg" />
-              <small className="text-muted">Asegúrate que la imagen exista en la carpeta `/public/img/`.</small>
+              <label htmlFor="imagen" className="form-label">URL de la Imagen</label>
+              <input
+                type="text"
+                className="form-control"
+                id="imagen"
+                name="imagen"
+                value={producto.imagen || ''}
+                onChange={handleChange}
+                placeholder="https://ejemplo.com/imagen.jpg"
+              />
+              {producto.imagen && (
+                <div className="mt-2">
+                  <img
+                    src={producto.imagen}
+                    alt="Vista previa"
+                    className="img-thumbnail"
+                    style={{ maxWidth: '200px', maxHeight: '200px' }}
+                    onError={(e) => {
+                      e.currentTarget.src = 'https://via.placeholder.com/200x200?text=Error+al+cargar';
+                    }}
+                  />
+                </div>
+              )}
             </div>
 
-            <div className="d-flex justify-content-end">
-              <Link to="/admin/productos" className="btn btn-secondary me-2">Cancelar</Link>
-              <button type="submit" className="btn btn-primario">
-                {esModoEdicion ? 'Guardar Cambios' : 'Crear Producto'}
+            <div className="d-flex gap-2 justify-content-end mt-4">
+              <Link to="/admin/productos" className="btn btn-secondary">
+                Cancelar
+              </Link>
+              <button type="submit" className="btn btn-primary">
+                <i className="bi bi-save me-2"></i>
+                {esModoEdicion ? 'Actualizar Producto' : 'Crear Producto'}
               </button>
             </div>
+
           </form>
         </div>
+      </div>
+
+      <div className="alert alert-info mt-3">
+        <i className="bi bi-info-circle me-2"></i>
+        <strong>Nota:</strong> Los campos marcados con * son obligatorios.
       </div>
     </div>
   );

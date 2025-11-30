@@ -1,6 +1,8 @@
 import { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
 import type { Producto } from '../types';
-import { api } from '../services/mockApi';
+import axios from 'axios';
+
+const API_URL = 'http://localhost:8080/api';
 
 interface ProductContextType {
   productos: Producto[];
@@ -8,6 +10,7 @@ interface ProductContextType {
   actualizarStockProducto: (productoId: number, cantidadARestar: number) => Promise<boolean>;
   restaurarStockProducto: (productoId: number, cantidadARestaurar: number) => Promise<void>;
   actualizarProductoCompleto: (productoActualizado: Producto) => void;
+  recargarProductos: () => Promise<void>;
 }
 
 const ProductContext = createContext<ProductContextType | undefined>(undefined);
@@ -25,67 +28,101 @@ export function ProductProvider({ children }: { children: ReactNode }) {
   const [productos, setProductos] = useState<Producto[]>([]);
   const [cargando, setCargando] = useState(true);
 
+  // Función para cargar productos desde la API
+  const cargarProductos = async () => {
+    try {
+      setCargando(true);
+      const response = await axios.get(`${API_URL}/productos`);
+      setProductos(response.data);
+    } catch (error) {
+      console.error("Error al cargar productos:", error);
+    } finally {
+      setCargando(false);
+    }
+  };
+
+  // Cargar productos al montar el componente
   useEffect(() => {
-    api.getProductos()
-      .then(data => {
-        setProductos(data);
-        setCargando(false);
-      })
-      .catch(err => {
-        console.error("Error al cargar productos:", err);
-        setCargando(false);
-      });
+    cargarProductos();
   }, []);
 
-  const guardarProductosEnEstadoYDB = (nuevosProductos: Producto[]) => {
-    setProductos(nuevosProductos);
-    api.saveProductos(nuevosProductos);
+  // Función pública para recargar productos
+  const recargarProductos = async () => {
+    await cargarProductos();
   };
 
+  // Actualizar stock (descontar)
   const actualizarStockProducto = async (productoId: number, cantidadARestar: number): Promise<boolean> => {
-    const indiceProducto = productos.findIndex(p => p.id === productoId);
-    if (indiceProducto === -1) {
-      console.error("Producto no encontrado para actualizar stock");
+    try {
+      const producto = productos.find(p => p.id === productoId);
+      if (!producto) {
+        console.error("Producto no encontrado");
+        return false;
+      }
+
+      if (producto.stock < cantidadARestar) {
+        console.error("Stock insuficiente");
+        return false;
+      }
+
+      // Llamar al endpoint de descontar stock
+      await axios.post(`${API_URL}/productos/${productoId}/descontar-stock`, {
+        cantidad: cantidadARestar
+      });
+
+      // Actualizar el estado local
+      setProductos(prevProductos =>
+        prevProductos.map(p =>
+          p.id === productoId ? { ...p, stock: p.stock - cantidadARestar } : p
+        )
+      );
+
+      return true;
+    } catch (error) {
+      console.error("Error al actualizar stock:", error);
       return false;
     }
-
-    const producto = productos[indiceProducto];
-    if (producto.stock < cantidadARestar) {
-      console.error("Stock insuficiente");
-      return false;
-    }
-
-    const nuevosProductos = productos.map(p => 
-      p.id === productoId ? { ...p, stock: p.stock - cantidadARestar } : p
-    );
-    
-    guardarProductosEnEstadoYDB(nuevosProductos);
-    return true;
   };
 
+  // Restaurar stock
   const restaurarStockProducto = async (productoId: number, cantidadARestaurar: number) => {
-    const indiceProducto = productos.findIndex(p => p.id === productoId);
-    if (indiceProducto === -1) {
-      console.error("Producto no encontrado para restaurar stock");
-      return;
-    }
+    try {
+      // Llamar al endpoint de restaurar stock
+      await axios.post(`${API_URL}/productos/${productoId}/restaurar-stock`, {
+        cantidad: cantidadARestaurar
+      });
 
-    const nuevosProductos = productos.map(p => 
-      p.id === productoId ? { ...p, stock: p.stock + cantidadARestaurar } : p
-    );
-    
-    guardarProductosEnEstadoYDB(nuevosProductos);
+      // Actualizar el estado local
+      setProductos(prevProductos =>
+        prevProductos.map(p =>
+          p.id === productoId ? { ...p, stock: p.stock + cantidadARestaurar } : p
+        )
+      );
+    } catch (error) {
+      console.error("Error al restaurar stock:", error);
+    }
   };
-  
+
+  // Actualizar producto completo
   const actualizarProductoCompleto = (productoActualizado: Producto) => {
-    const nuevosProductos = productos.map(p =>
-      p.id === productoActualizado.id ? productoActualizado : p
+    setProductos(prevProductos =>
+      prevProductos.map(p =>
+        p.id === productoActualizado.id ? productoActualizado : p
+      )
     );
-    guardarProductosEnEstadoYDB(nuevosProductos);
   };
 
   return (
-    <ProductContext.Provider value={{ productos, cargando, actualizarStockProducto, restaurarStockProducto, actualizarProductoCompleto }}>
+    <ProductContext.Provider
+      value={{
+        productos,
+        cargando,
+        actualizarStockProducto,
+        restaurarStockProducto,
+        actualizarProductoCompleto,
+        recargarProductos
+      }}
+    >
       {children}
     </ProductContext.Provider>
   );

@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { api } from '../../services/mockApi';
+import axios from 'axios';
 import type { Producto } from '../../types';
 import { formatearPrecio } from '../../utils/format';
 import { useNotification } from '../../context/NotificationContext';
+
+const API_URL = 'http://localhost:8080/api';
 
 export default function AdminProductos() {
   const [productos, setProductos] = useState<Producto[]>([]);
@@ -14,35 +16,41 @@ export default function AdminProductos() {
     cargarProductos();
   }, []);
 
-  const cargarProductos = () => {
-    setCargando(true);
-    api.getProductos()
-      .then(data => {
-        setProductos(data);
-        setCargando(false);
-      })
-      .catch(err => {
-        console.error("Error al cargar productos:", err);
-        setCargando(false);
-      });
+  const cargarProductos = async () => {
+    try {
+      setCargando(true);
+      const response = await axios.get(`${API_URL}/productos`);
+      setProductos(response.data);
+    } catch (error) {
+      console.error("Error al cargar productos:", error);
+      showNotification('Error al cargar productos.', 'error');
+    } finally {
+      setCargando(false);
+    }
   };
 
-  const handleEliminar = (id: number) => {
-    if (window.confirm(`¿Estás seguro de que quieres eliminar el producto con ID: ${id}?`)) {
-      api.deleteProducto(id)
-        .then(() => {
-          showNotification('Producto eliminado.', 'success');
-          cargarProductos();
-        })
-        .catch(err => {
-          console.error("Error al eliminar producto:", err);
-          showNotification('Error al eliminar el producto.', 'error');
-        });
+  const handleEliminar = async (id: number) => {
+    const producto = productos.find(p => p.id === id);
+    if (window.confirm(`¿Estás seguro de que quieres eliminar "${producto?.nombre}"?`)) {
+      try {
+        await axios.delete(`${API_URL}/productos/${id}`);
+        showNotification('Producto eliminado correctamente.', 'success');
+        cargarProductos();
+      } catch (error) {
+        console.error("Error al eliminar producto:", error);
+        showNotification('Error al eliminar el producto.', 'error');
+      }
     }
   };
 
   if (cargando) {
-    return <p>Cargando productos...</p>;
+    return (
+      <div className="container-fluid text-center py-5">
+        <div className="spinner-border text-primary" role="status">
+          <span className="visually-hidden">Cargando productos...</span>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -58,55 +66,79 @@ export default function AdminProductos() {
         <table className="table table-hover shadow-sm">
           <thead className="bg-light">
             <tr>
-              <th>Código</th>
+              <th>ID</th>
               <th>Nombre</th>
               <th>Precio</th>
               <th>Stock</th>
               <th>Categoría</th>
-              <th>Origen</th>
-              <th>Etiqueta</th>
+              <th>Estado</th>
               <th>Acciones</th>
             </tr>
           </thead>
-          <tbody id="cuerpoTablaProductos">
+          <tbody>
             {productos.length === 0 ? (
               <tr>
-                <td colSpan={8} className="text-center text-muted">No hay productos registrados.</td>
+                <td colSpan={7} className="text-center text-muted py-4">
+                  No hay productos registrados. Haz clic en "Nuevo Producto" para agregar uno.
+                </td>
               </tr>
             ) : (
               productos.map(producto => {
-                const precioFinal = producto.precioConDescuento ?? producto.precio;
-                const precioMostrar = precioFinal === 0 ? 'Gratis' : formatearPrecio(precioFinal);
-                const alertaStockCritico = (producto.stockCritico !== null && producto.stock <= producto.stockCritico)
-                  ? '<span class="badge bg-danger ms-2">Stock Crítico</span>'
-                  : '';
-
-                const descuento = producto.precioConDescuento !== undefined
-                  ? Math.round(((producto.precio - producto.precioConDescuento) / producto.precio) * 100)
-                  : 0;
-                const textoDescuento = descuento > 0 ? ` (${descuento}% de dcto.)` : '';
-                const etiqueta = producto.precioConDescuento !== undefined ? 'Oferta' : 'Normal';
+                const stockBajo = producto.stock < 10;
+                const sinStock = producto.stock === 0;
 
                 return (
                   <tr key={producto.id}>
-                    <td>{producto.id || ''}</td>
-                    <td>{producto.nombre}</td>
-                    <td>{precioMostrar}</td>
-                    <td dangerouslySetInnerHTML={{ __html: `${producto.stock} ${alertaStockCritico}` }} />
-                    <td>{producto.categoria || 'N/A'}</td>
-                    <td>{producto.origen || 'N/A'}</td>
+                    <td>{producto.id}</td>
                     <td>
-                      <span className={`badge ${etiqueta === 'Oferta' ? 'bg-warning' : 'bg-success'}`}>
-                        {etiqueta} {textoDescuento}
+                      <div className="d-flex align-items-center">
+                        {producto.imagen && (
+                          <img
+                            src={producto.imagen}
+                            alt={producto.nombre}
+                            className="rounded me-2"
+                            style={{ width: '40px', height: '40px', objectFit: 'cover' }}
+                          />
+                        )}
+                        <div>
+                          <div>{producto.nombre}</div>
+                          {producto.descripcion && (
+                            <small className="text-muted">{producto.descripcion.substring(0, 50)}...</small>
+                          )}
+                        </div>
+                      </div>
+                    </td>
+                    <td>{formatearPrecio(producto.precio)}</td>
+                    <td>
+                      <span className={`badge ${sinStock ? 'bg-danger' : stockBajo ? 'bg-warning' : 'bg-success'}`}>
+                        {producto.stock} unidades
                       </span>
                     </td>
+                    <td>{producto.categoria || 'Sin categoría'}</td>
                     <td>
-                      <Link to={`/admin/productos/editar/${producto.id}`} className="btn btn-sm btn-warning me-2">
-                        <i className="bi bi-pencil"></i>
-                      </Link>
-                      <button className="btn btn-sm btn-danger" onClick={() => handleEliminar(producto.id)}>
-                        <i className="bi bi-trash"></i>
-                      </button>
+                      {producto.eliminado ? (
+                        <span className="badge bg-secondary">Eliminado</span>
+                      ) : (
+                        <span className="badge bg-success">Activo</span>
+                      )}
+                    </td>
+                    <td>
+                      <div className="btn-group" role="group">
+                        <Link
+                          to={`/admin/productos/editar/${producto.id}`}
+                          className="btn btn-sm btn-warning"
+                          title="Editar producto"
+                        >
+                          <i className="bi bi-pencil"></i>
+                        </Link>
+                        <button
+                          className="btn btn-sm btn-danger"
+                          onClick={() => handleEliminar(producto.id)}
+                          title="Eliminar producto"
+                        >
+                          <i className="bi bi-trash"></i>
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 );
@@ -115,6 +147,13 @@ export default function AdminProductos() {
           </tbody>
         </table>
       </div>
+
+      {productos.length > 0 && (
+        <div className="alert alert-info mt-3">
+          <i className="bi bi-info-circle me-2"></i>
+          <strong>Total de productos:</strong> {productos.length}
+        </div>
+      )}
     </div>
   );
 }

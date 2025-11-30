@@ -10,6 +10,7 @@ interface CartContextType {
   agregarAlCarrito: (producto: Producto, cantidad: number) => Promise<void>;
   cambiarCantidad: (idProducto: number, cantidadACambiar: number) => Promise<void>;
   limpiarCarrito: () => Promise<void>;
+  limpiarCarritoSinRestaurar: () => void;
   estaEnStock: (producto: Producto, cantidadDeseada: number) => boolean;
 }
 
@@ -117,6 +118,10 @@ export function CartProvider({ children }: { children: ReactNode }) {
     actualizarCarritoYGuardar([]);
   };
 
+  const limpiarCarritoSinRestaurar = () => {
+    actualizarCarritoYGuardar([]);
+  };
+
   const contadorCarrito = carrito.reduce((acc, item) => acc + item.cantidad, 0);
   const totalCarrito = carrito.reduce((acc, item) => acc + (item.precio * item.cantidad), 0);
 
@@ -127,7 +132,8 @@ export function CartProvider({ children }: { children: ReactNode }) {
     estaEnStock,
     agregarAlCarrito,
     cambiarCantidad,
-    limpiarCarrito
+    limpiarCarrito,
+    limpiarCarritoSinRestaurar
   };
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>;

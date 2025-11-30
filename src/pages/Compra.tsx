@@ -17,7 +17,7 @@ const sucursales = [
 
 export default function Compra() {
   const { usuario } = useAuth();
-  const { carrito, totalCarrito, limpiarCarrito } = useCart();
+  const { carrito, totalCarrito, limpiarCarritoSinRestaurar } = useCart();
   const { showNotification } = useNotification();
   const navigate = useNavigate();
 
@@ -148,7 +148,7 @@ export default function Compra() {
     try {
       await api.crearPedido(nuevoPedido, guardarDireccion, nuevaDireccionAGuardar);
 
-      limpiarCarrito();
+      limpiarCarritoSinRestaurar();
       showNotification('¡Compra realizada con éxito!', 'success');
       setBoleta(nuevoPedido);
 

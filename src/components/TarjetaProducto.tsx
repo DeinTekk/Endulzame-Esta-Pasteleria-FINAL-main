@@ -64,7 +64,11 @@ export default function TarjetaProducto({ producto, onProductoClick }: TarjetaPr
             ) : (
               <span className="precio fw-bold">{precioMostrado}</span>
             )}
-            <span className="text-success fw-bold small">Stock: {producto.stock} {unidadTexto}</span>
+            {producto.stock > 0 ? (
+              <span className="text-success fw-bold small">Stock: {producto.stock} {unidadTexto}</span>
+            ) : (
+              <span className="badge bg-danger">Sin stock</span>
+            )}
           </div>
         </div>
       </div>
