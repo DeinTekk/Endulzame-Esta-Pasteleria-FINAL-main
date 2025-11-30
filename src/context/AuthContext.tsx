@@ -1,91 +1,95 @@
-import { createContext, useContext, useState, useEffect } from 'react';
-import type { ReactNode } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { createContext, useContext, useState, useEffect } from 'react';
 import type { Usuario } from '../types';
-import { api } from '../services/mockApi';
-import { useNotification } from './NotificationContext';
+import { authAPI } from '../services/api';
 
 interface AuthContextType {
-  usuarioActual: Usuario | null;
+  usuario: Usuario | null;
   login: (correo: string, contrasena: string) => Promise<void>;
-  register: (usuario: Omit<Usuario, 'id' | 'esAdmin'>) => Promise<void>;
+  register: (userData: {
+    rut: string;
+    nombre: string;
+    apellidos: string;
+    correo: string;
+    contrasena: string;
+    region: string;
+    comuna: string;
+    direccion?: string;
+  }) => Promise<void>;
   logout: () => void;
-  updateUser: (usuarioActualizado: Usuario) => Promise<void>;
+  isAuthenticated: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// eslint-disable-next-line react-refresh/only-export-components
-export function useAuth() {
-  const context = useContext(AuthContext);
-  if (context === undefined) {
-    throw new Error('useAuth debe ser usado dentro de un AuthProvider');
-  }
-  return context;
-}
-
-export function AuthProvider({ children }: { children: ReactNode }) {
-  const [usuarioActual, setUsuarioActual] = useState<Usuario | null>(null);
-  const navigate = useNavigate();
-  const { showNotification } = useNotification();
+export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const [usuario, setUsuario] = useState<Usuario | null>(null);
 
   useEffect(() => {
-    const sesionIniciada = localStorage.getItem('sesionIniciada') === 'true';
-    const usuarioGuardado = localStorage.getItem('usuarioActual');
-    if (sesionIniciada && usuarioGuardado) {
-      setUsuarioActual(JSON.parse(usuarioGuardado));
+    const token = localStorage.getItem('token');
+    const usuarioGuardado = localStorage.getItem('usuario');
+    
+    if (token && usuarioGuardado && usuarioGuardado !== 'undefined') {
+      try {
+        setUsuario(JSON.parse(usuarioGuardado));
+      } catch (error) {
+        console.error('Error al parsear usuario:', error);
+        localStorage.removeItem('token');
+        localStorage.removeItem('usuario');
+      }
     }
   }, []);
 
   const login = async (correo: string, contrasena: string) => {
     try {
-      const usuario = await api.login(correo, contrasena);
-      setUsuarioActual(usuario);
-      showNotification(`¡Bienvenido de nuevo, ${usuario.nombre}!`, 'success');
-      if (usuario.esAdmin) {
-        navigate('/admin');
-      } else {
-        navigate('/');
-      }
-    } catch (error) {
-      console.error(error);
-      showNotification('Credenciales incorrectas.', 'error');
+      const response = await authAPI.login({ correo, contrasena });
+      const { token, mensaje, tipo, ...usuarioData } = response.data;
+      
+      localStorage.setItem('token', token);
+      localStorage.setItem('usuario', JSON.stringify(usuarioData));
+      setUsuario(usuarioData as Usuario);
+    } catch (error: any) {
+      throw new Error(error.response?.data?.mensaje || 'Error al iniciar sesión');
     }
   };
 
-  const register = async (nuevoUsuario: Omit<Usuario, 'id' | 'esAdmin'>) => {
-    await api.register(nuevoUsuario);
-    showNotification('¡Registro exitoso! Ahora puedes iniciar sesión.', 'success');
-    navigate('/ingreso');
+  const register = async (userData: any) => {
+    try {
+      const response = await authAPI.register(userData);
+      const { token, mensaje, tipo, ...usuarioData } = response.data;
+      
+      localStorage.setItem('token', token);
+      localStorage.setItem('usuario', JSON.stringify(usuarioData));
+      setUsuario(usuarioData as Usuario);
+    } catch (error: any) {
+      throw new Error(error.response?.data?.mensaje || 'Error al registrar usuario');
+    }
   };
 
   const logout = () => {
-    localStorage.removeItem('sesionIniciada');
-    localStorage.removeItem('usuarioActual');
-    localStorage.removeItem('carrito');
-    setUsuarioActual(null);
-    showNotification('Has cerrado sesión.', 'info');
-    navigate('/');
+    localStorage.removeItem('token');
+    localStorage.removeItem('usuario');
+    setUsuario(null);
   };
 
-  const updateUser = async (usuarioActualizado: Usuario) => {
-    try {
-      const usuarioGuardado = await api.updateUser(usuarioActualizado);
-      setUsuarioActual(usuarioGuardado);
-      showNotification('Perfil actualizado con éxito.', 'success');
-    } catch (error) {
-      console.error(error);
-      showNotification('Error al actualizar el perfil.', 'error');
-    }
-  };
+  return (
+    <AuthContext.Provider
+      value={{
+        usuario,
+        login,
+        register,
+        logout,
+        isAuthenticated: !!usuario,
+      }}
+    >
+      {children}
+    </AuthContext.Provider>
+  );
+};
 
-  const value = {
-    usuarioActual,
-    login,
-    register,
-    logout,
-    updateUser
-  };
-
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
-}
+export const useAuth = () => {
+  const context = useContext(AuthContext);
+  if (context === undefined) {
+    throw new Error('useAuth debe ser usado dentro de un AuthProvider');
+  }
+  return context;
+};
