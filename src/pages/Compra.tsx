@@ -36,18 +36,35 @@ export default function Compra() {
   const [regionSeleccionada, setRegionSeleccionada] = useState('');
   const [comunaSeleccionada, setComunaSeleccionada] = useState('');
 
+  // 1. Cargar el mapa de regiones y comunas
   useEffect(() => {
     api.getRegionesYComunas().then(setRegiones);
   }, []);
 
+  // 2. NUEVO: Pre-seleccionar la región guardada en el perfil del usuario
+  useEffect(() => {
+    if (usuario?.region) {
+      setRegionSeleccionada(usuario.region);
+    }
+  }, [usuario]);
+
+  // 3. MODIFICADO: Actualizar comunas cuando cambia la región
   useEffect(() => {
     if (regionSeleccionada && regiones[regionSeleccionada]) {
       setComunas(regiones[regionSeleccionada]);
-      setComunaSeleccionada('');
+      
+      // Lógica inteligente: Si la región seleccionada es la misma que la del usuario,
+      // pre-seleccionamos también su comuna. Si el usuario cambió la región manualmente,
+      // limpiamos la comuna para que elija una nueva.
+      if (usuario?.region === regionSeleccionada && usuario?.comuna) {
+        setComunaSeleccionada(usuario.comuna);
+      } else {
+        setComunaSeleccionada('');
+      }
     } else {
       setComunas([]);
     }
-  }, [regionSeleccionada, regiones]);
+  }, [regionSeleccionada, regiones, usuario]);
 
 
   const puntosUsuario = usuario?.puntos || 0;
@@ -234,7 +251,13 @@ export default function Compra() {
                       <div id="camposNuevaDireccion">
                         <Form.Group className="mb-3">
                           <Form.Label htmlFor="calleDireccion">Calle y Número</Form.Label>
-                          <Form.Control type="text" id="calleDireccion" placeholder="Ej: Av. Principal 123" value={calle} onChange={(e) => setCalle(e.target.value)} />
+                          <Form.Control 
+                            type="text" 
+                            id="calleDireccion" 
+                            placeholder="Ej: Av. Principal 123" 
+                            value={calle} 
+                            onChange={(e) => setCalle(e.target.value)} 
+                          />
                         </Form.Group>
 
                         <Row>

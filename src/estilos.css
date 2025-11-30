@@ -1,3 +1,6 @@
+/* ========================================================================== */
+/* 1. VARIABLES Y ESTILOS BASE (ESTO CONTROLA EL TAMAÑO DEL LOGO Y FONDO)     */
+/* ========================================================================== */
 :root {
   --color-primario: #2E8B57;
   --color-secundario: #ff700a;
@@ -13,7 +16,7 @@
 body {
   font-family: "Montserrat", sans-serif;
   background-color: var(--color-fondo-principal);
-  background-image: url("/img/fondo3.jpg");
+  background-image: url("/img/fondo3.jpg"); /* Aquí se carga tu fondo */
   background-repeat: repeat;
   background-size: auto;
   background-attachment: fixed;
@@ -30,6 +33,7 @@ h3, h4, h5, h6, p {
   color: var(--color-texto-secundario);
 }
 
+/* IMPORTANTE: Esto controla el tamaño del logo para que no se vea gigante */
 .imagen-logo {
   width: 36px;
   height: 36px;
@@ -173,8 +177,12 @@ footer {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
-.item-desplegable { color: var(--color-texto-principal); }
-.item-desplegable:hover, .item-desplegable:focus {
+.item-desplegable {
+  color: var(--color-texto-principal);
+}
+
+.item-desplegable:hover,
+.item-desplegable:focus {
   background-color: var(--color-primario);
   color: #ffffff;
 }
@@ -194,8 +202,14 @@ footer {
   justify-content: space-between;
 }
 
-.contenedor-texto-tarjeta { flex-grow: 1; }
-.mapa-sucursal { height: 300px; width: 100%; }
+.contenedor-texto-tarjeta {
+  flex-grow: 1;
+}
+
+.mapa-sucursal {
+  height: 300px;
+  width: 100%;
+}
 
 .btn-secundario {
   background: var(--color-primario);
@@ -214,42 +228,84 @@ footer {
   color: var(--color-texto-secundario);
 }
 
-.nav-link.active, .nav-link:hover { color: var(--color-primario); }
-.nav-link { color: var(--color-texto-principal); font-weight: 500; }
+.nav-link.active,
+.nav-link:hover {
+  color: var(--color-primario);
+}
+
+.nav-link {
+  color: var(--color-texto-principal);
+  font-weight: 500;
+}
 
 /* ========================================================================== */
-/* MEJORAS DE VISIBILIDAD Y BLOQUE TRASERO (AGREGADO)                         */
+/* 2. CORRECCIÓN VISIBILIDAD DE TEXTO (PARA QUE SE VEA EN EL FONDO)           */
 /* ========================================================================== */
 
-/* 1. CLASE PARA EL BLOQUE SEMITRANSPARENTE */
+/* Texto general blanco con sombra */
+body, 
+p, 
+h1, h2, h3, h4, h5, h6, 
+.texto-secundario, 
+.text-muted,
+.lead,
+label {
+  color: #ffffff !important;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.9) !important;
+}
+
+/* Clases para los bloques semi-transparentes */
 .bloque-legible {
-  background-color: rgba(0, 0, 0, 0.6) !important; /* Negro al 60% opacidad */
+  background-color: rgba(0, 0, 0, 0.6) !important;
   padding: 2rem;
   border-radius: 15px;
-  backdrop-filter: blur(4px); /* Difuminado suave del fondo */
+  backdrop-filter: blur(4px);
   margin-bottom: 2rem;
   box-shadow: 0 4px 15px rgba(0,0,0,0.3);
 }
 
-/* 2. Texto general en BLANCO para verse sobre el fondo oscuro */
-body, p, h1, h2, h3, h4, h5, h6, .texto-secundario, .text-muted, .lead, label {
-  color: #ffffff !important;
-  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
-}
+/* ========================================================================== */
+/* 3. EXCEPCIONES: RESTAURAR TEXTO OSCURO EN ADMIN Y TARJETAS (SIN BORROSIDAD) */
+/* ========================================================================== */
 
-/* 3. EXCEPCIONES: Restaurar color oscuro dentro de tarjetas/cajas blancas */
-.card, .tarjeta-producto, .modal-content, .list-group-item, .form-control, 
-.descripcion-categoria, .menu-desplegable, .barra-navegacion, footer {
+/* Esto restaura el color gris oscuro normal y QUITA la sombra en el panel de admin */
+#contenedor-admin, 
+#contenedor-admin h1, 
+#contenedor-admin h2, 
+#contenedor-admin table, 
+#contenedor-admin th, 
+#contenedor-admin td,
+#contenedor-admin p,
+#contenedor-admin div,
+.card, 
+.tarjeta-producto, 
+.modal-content, 
+.list-group-item, 
+.form-control, 
+.descripcion-categoria, 
+.menu-desplegable, 
+.barra-navegacion,
+footer {
   color: #333333 !important;
   text-shadow: none !important;
 }
 
-/* Restaurar hijos dentro de cajas blancas */
-.card p, .card h1, .card h2, .card h3, .card h4, .card h5, .card h6, .card span, 
-.tarjeta-producto p, .modal-content p, .modal-content h5, footer p {
+/* Restaurar elementos hijos dentro de tarjetas y admin */
+.card p, .card h1, .card h2, .card h3, .card h4, .card h5, .card h6, .card span, .card label,
+.tarjeta-producto p, .tarjeta-producto h5, 
+.modal-content p, .modal-content h5, .modal-content h6, .modal-content label,
+.barra-navegacion a, .barra-navegacion span,
+footer p, footer span, footer li {
   color: #333333 !important;
   text-shadow: none !important;
 }
 
-.precio { color: var(--color-primario) !important; text-shadow: none !important; }
-.nav-link.active { color: var(--color-primario) !important; }
+/* Mantener el precio y enlaces activos en su color verde/naranja */
+.precio {
+  color: var(--color-primario) !important;
+  text-shadow: none !important;
+}
+
+.nav-link.active {
+  color: var(--color-primario) !important;
+}
