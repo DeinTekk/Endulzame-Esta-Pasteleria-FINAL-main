@@ -47,8 +47,12 @@ export default function Blog() {
   return (
     <>
       <main className="container my-5">
-        <h1 className="text-center">Blog de Endúlzame esta</h1>
-        <p className="lead text-center mb-5">Conoce nuestras últimas noticias, recetas y secretos de la repostería artesanal.</p>
+        {/* BLOQUE AÑADIDO: Encabezado del Blog */}
+        <div className="bloque-legible text-center mb-5">
+          <h1>Blog de Endúlzame esta</h1>
+          <p className="lead">Conoce nuestras últimas noticias, recetas y secretos de la repostería artesanal.</p>
+        </div>
+
         <div className="row">
           <aside className="col-lg-3 mb-4">
             <div className="card shadow-sm barra-lateral-fija">

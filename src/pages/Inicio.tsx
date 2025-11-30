@@ -28,13 +28,14 @@ export default function Inicio() {
           <div className="container contenido-portada text-center">
             <h1 className="fw-bold">Dulzura artesanal directo a tu mesa</h1>
             <h2 className="lead">Tortas, pasteles y postres elaborados con los mejores ingredientes y mucho amor.</h2>
-            <Link to="/productos" className="btn btn-lg btn-primario">Ver catálogo</Link>
+            <Link to="/productos" className="btn btn-lg btn-primario mt-3">Ver catálogo</Link>
           </div>
         </div>
       </header>
       
       <main className="container my-5">
-        <section className="text-center mb-5">
+        {/* BLOQUE AÑADIDO: Nuestra Esencia */}
+        <section className="text-center mb-5 bloque-legible">
           <h2 className="fw-bold mb-3">Nuestra Esencia</h2>
           <p className="text-muted mx-auto" style={{ maxWidth: '700px' }}>
             En Endúlzame esta, somos más que una pastelería. Somos una comunidad dedicada a la calidad,
@@ -66,7 +67,8 @@ export default function Inicio() {
           </div>
         </section>
         
-        <section className="text-center">
+        {/* BLOQUE AÑADIDO: Novedades Blog */}
+        <section className="text-center bloque-legible">
           <h2 className="fw-bold mb-3">Últimas Novedades del Blog</h2>
           <p className="text-muted mx-auto" style={{ maxWidth: '700px' }}>
             Mantente al día con nuestros artículos sobre repostería, consejos de decoración y recetas
