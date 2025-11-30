@@ -27,7 +27,7 @@ const renderWithRouter = () => {
 beforeEach(() => {
   mockLogout.mockClear();
   mockUseAuth.mockReturnValue({
-    usuarioActual: { nombre: 'Cliente', esAdmin: false },
+    usuario: { nombre: 'Cliente', esAdmin: false },
     logout: mockLogout,
   });
   mockUseCart.mockReturnValue({
@@ -42,7 +42,7 @@ beforeEach(() => {
 describe('Componente: Layout (Navbar)', () => {
 
   test('debe mostrar "Iniciar sesión" y "Regístrate" si el usuario está deslogueado', () => {
-    mockUseAuth.mockReturnValue({ usuarioActual: null });
+    mockUseAuth.mockReturnValue({ usuario: null, logout: mockLogout });
     renderWithRouter();
 
     expect(screen.getByText('Iniciar sesión')).toBeInTheDocument();
@@ -62,7 +62,7 @@ describe('Componente: Layout (Navbar)', () => {
 
   test('debe mostrar "Hola, Admin" y "Panel de Admin" para un admin logueado', async () => {
     mockUseAuth.mockReturnValue({
-      usuarioActual: { nombre: 'Admin', esAdmin: true },
+      usuario: { nombre: 'Admin', esAdmin: true },
       logout: mockLogout,
     });
     renderWithRouter();

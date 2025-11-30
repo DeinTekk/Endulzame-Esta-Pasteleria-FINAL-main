@@ -4,6 +4,7 @@ import { api } from '../../services/mockApi';
 import type { Usuario } from '../../types';
 import { validarRut, validarCorreo } from '../../utils/validation';
 import { useNotification } from '../../context/NotificationContext';
+import { useAuth } from '../../context/AuthContext';
 
 const usuarioVacio: Omit<Usuario, 'id'> = {
   rut: '',
@@ -23,6 +24,7 @@ export default function FormularioUsuario() {
   const navigate = useNavigate();
   const esModoEdicion = Boolean(correo);
   const { showNotification } = useNotification();
+  const { usuario: usuarioActual } = useAuth();
 
   const [usuario, setUsuario] = useState(usuarioVacio);
   const [cargando, setCargando] = useState(true);
@@ -157,6 +159,11 @@ export default function FormularioUsuario() {
     return 'cliente';
   }
 
+  // Verificar si el usuario que se está editando es el mismo que está logueado
+  const esUsuarioActual = esModoEdicion && correo === usuarioActual?.correo;
+  // Verificar si el usuario actual es admin
+  const esAdminActual = usuarioActual?.esAdmin === true;
+
   return (
     <div className="container-fluid">
       <header className="d-flex justify-content-between align-items-center pb-3 mb-4 border-bottom">
@@ -214,11 +221,25 @@ export default function FormularioUsuario() {
 
           <div className="mb-3">
             <label htmlFor="rol" className="form-label">Tipo de Usuario</label>
-            <select className="form-select" id="rol" name="rol" value={getRol()} onChange={handleChange} required>
+            <select 
+              className="form-select" 
+              id="rol" 
+              name="rol" 
+              value={getRol()} 
+              onChange={handleChange} 
+              required
+              disabled={esUsuarioActual && esAdminActual && usuario.esAdmin}
+            >
               <option value="cliente">Cliente</option>
               <option value="vendedor">Vendedor</option>
               <option value="administrador">Administrador</option>
             </select>
+            {esUsuarioActual && esAdminActual && usuario.esAdmin && (
+              <div className="form-text text-warning">
+                <i className="bi bi-exclamation-triangle-fill me-1"></i>
+                No puedes quitarte tus propios permisos de administrador por seguridad.
+              </div>
+            )}
           </div>
 
           <hr />
