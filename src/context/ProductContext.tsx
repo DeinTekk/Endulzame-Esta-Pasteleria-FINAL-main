@@ -1,8 +1,6 @@
 import { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
 import type { Producto } from '../types';
-import axios from 'axios';
-
-const API_URL = 'http://localhost:8080/api';
+import apiClient from '../services/api';
 
 interface ProductContextType {
   productos: Producto[];
@@ -32,7 +30,7 @@ export function ProductProvider({ children }: { children: ReactNode }) {
   const cargarProductos = async () => {
     try {
       setCargando(true);
-      const response = await axios.get(`${API_URL}/productos`);
+      const response = await apiClient.get('/productos');
       setProductos(response.data);
     } catch (error) {
       console.error("Error al cargar productos:", error);
@@ -66,7 +64,7 @@ export function ProductProvider({ children }: { children: ReactNode }) {
       }
 
       // Llamar al endpoint de descontar stock
-      await axios.post(`${API_URL}/productos/${productoId}/descontar-stock`, {
+      await apiClient.post(`/productos/${productoId}/descontar-stock`, {
         cantidad: cantidadARestar
       });
 
@@ -88,7 +86,7 @@ export function ProductProvider({ children }: { children: ReactNode }) {
   const restaurarStockProducto = async (productoId: number, cantidadARestaurar: number) => {
     try {
       // Llamar al endpoint de restaurar stock
-      await axios.post(`${API_URL}/productos/${productoId}/restaurar-stock`, {
+      await apiClient.post(`/productos/${productoId}/restaurar-stock`, {
         cantidad: cantidadARestaurar
       });
 

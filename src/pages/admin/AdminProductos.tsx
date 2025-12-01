@@ -1,11 +1,9 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import axios from 'axios';
+import apiClient from '../../services/api';
 import type { Producto } from '../../types';
 import { formatearPrecio } from '../../utils/format';
 import { useNotification } from '../../context/NotificationContext';
-
-const API_URL = 'http://localhost:8080/api';
 
 export default function AdminProductos() {
   const [productos, setProductos] = useState<Producto[]>([]);
@@ -19,7 +17,7 @@ export default function AdminProductos() {
   const cargarProductos = async () => {
     try {
       setCargando(true);
-      const response = await axios.get(`${API_URL}/productos`);
+      const response = await apiClient.get('/productos');
       setProductos(response.data);
     } catch (error) {
       console.error("Error al cargar productos:", error);
@@ -33,7 +31,7 @@ export default function AdminProductos() {
     const producto = productos.find(p => p.id === id);
     if (window.confirm(`¿Estás seguro de que quieres eliminar "${producto?.nombre}"?`)) {
       try {
-        await axios.delete(`${API_URL}/productos/${id}`);
+        await apiClient.delete(`/productos/${id}`);
         showNotification('Producto eliminado correctamente.', 'success');
         cargarProductos();
       } catch (error) {

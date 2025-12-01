@@ -11,7 +11,7 @@ interface CartContextType {
   cambiarCantidad: (idProducto: number, cantidadACambiar: number) => Promise<void>;
   limpiarCarrito: () => Promise<void>;
   limpiarCarritoSinRestaurar: () => void;
-  estaEnStock: (producto: Producto, cantidadDeseada: number) => boolean;
+  estaEnStock: (producto: Producto, cantidadDeseada: number) => Promise<boolean>;
 }
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
@@ -33,7 +33,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
     setCarrito(nuevoCarrito);
   };
 
-  const estaEnStock = (producto: Producto, cantidadDeseada: number): boolean => {
+  const estaEnStock = async (producto: Producto, cantidadDeseada: number): Promise<boolean> => {
     const productoEnContext = productos.find(p => p.id === producto.id);
     if (!productoEnContext) return false;
 
@@ -76,7 +76,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
           nombre: producto.nombre,
           precio: precioFinal,
           cantidad: cantidad,
-          unidad: producto.unidad
+          unidad: producto.unidad || 'unidad'
         }
       ];
     }

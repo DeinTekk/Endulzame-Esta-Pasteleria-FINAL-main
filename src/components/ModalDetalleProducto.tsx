@@ -123,6 +123,13 @@ export default function ModalDetalleProducto({ producto, onClose, onResenaAgrega
   const precioFinal = productoVivo.precioConDescuento ?? productoVivo.precio;
   const precioMostrado = formatearPrecio(precioFinal);
   const precioOriginalMostrado = formatearPrecio(productoVivo.precio);
+  
+  // Validar resenas
+  const resenas = productoVivo.resenas || [];
+  
+  // Validar unidad
+  const unidad = productoVivo.unidad || 'unidad';
+  const unidadPlural = productoVivo.stock !== 1 ? (unidad + 's') : unidad;
 
   return (
     <Modal show={producto !== null} onHide={onClose} onExited={handleOnExited} size="lg" centered>
@@ -131,10 +138,15 @@ export default function ModalDetalleProducto({ producto, onClose, onResenaAgrega
       </Modal.Header>
       <Modal.Body>
         <div id="contenidoModalDetalleProducto">
-          <img src={productoVivo.imagen} alt={productoVivo.nombre} className="img-fluid mb-3 w-100 rounded" />
+          <img 
+            src={productoVivo.imagen} 
+            alt={productoVivo.nombre} 
+            className="img-fluid mb-3 w-100 rounded"
+            onError={(e) => (e.currentTarget.src = 'https://placehold.co/600x400/eeeeee/cccccc?text=Imagen+No+Disponible')}
+          />
           <p>
             <strong>Precio: </strong>
-            {productoVivo.precioConDescuento !== undefined ? (
+            {productoVivo.precioConDescuento !== undefined && productoVivo.precioConDescuento !== null ? (
               <>
                 <span style={{ color: '#FFD700', fontWeight: 700 }}>{precioMostrado}</span>
                 <small className="text-muted text-decoration-line-through ms-2">{precioOriginalMostrado}</small>
@@ -142,16 +154,16 @@ export default function ModalDetalleProducto({ producto, onClose, onResenaAgrega
             ) : (
               <span>{precioMostrado}</span>
             )}
-            <span> por {productoVivo.unidad}</span>
+            <span> por {unidad}</span>
           </p>
-          <p><strong>Categoría:</strong> {productoVivo.categoria}</p>
-          <p><strong>Origen:</strong> {productoVivo.origen}</p>
-          <p><strong>Descripción:</strong> {productoVivo.descripcion}</p>
+          <p><strong>Categoría:</strong> {productoVivo.categoria || 'Sin categoría'}</p>
+          <p><strong>Origen:</strong> {productoVivo.origen || 'No especificado'}</p>
+          <p><strong>Descripción:</strong> {productoVivo.descripcion || 'Sin descripción'}</p>
           
           <p className="mb-3">
             <strong>Stock disponible:</strong> 
             <span className="stock-disponible-modal"> {productoVivo.stock} </span> 
-            {productoVivo.unidad}{productoVivo.stock !== 1 ? 's' : ''}
+            {unidadPlural}
           </p>
           
           <div className="d-flex align-items-center justify-content-between mb-4">
@@ -180,7 +192,7 @@ export default function ModalDetalleProducto({ producto, onClose, onResenaAgrega
         
         <h5 className="mb-3">Reseñas de Clientes</h5>
         <div id="contenedor-resenas" className="mb-4" style={{ maxHeight: '200px', overflowY: 'auto' }}>
-          <RenderResenas resenas={productoVivo.resenas} />
+          <RenderResenas resenas={resenas} />
         </div>
         
         {!usuario ? (

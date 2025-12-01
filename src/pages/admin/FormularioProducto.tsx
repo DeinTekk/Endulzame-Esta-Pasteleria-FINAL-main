@@ -1,11 +1,9 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import axios from 'axios';
+import apiClient from '../../services/api';
 import type { Producto } from '../../types';
 import { formatearPrecio } from '../../utils/format';
 import { useNotification } from '../../context/NotificationContext';
-
-const API_URL = 'http://localhost:8080/api';
 
 const productoVacio: Partial<Producto> = {
   nombre: '',
@@ -13,7 +11,10 @@ const productoVacio: Partial<Producto> = {
   precio: 0,
   stock: 0,
   categoria: '',
-  imagen: ''
+  imagen: '',
+  origen: '',
+  unidad: 'unidad',
+  stockCritico: 10
 };
 
 export default function FormularioProducto() {
@@ -35,12 +36,12 @@ export default function FormularioProducto() {
       setCargando(true);
 
       // Cargar categorías
-      const responseCategorias = await axios.get(`${API_URL}/productos/categorias`);
+      const responseCategorias = await apiClient.get('/productos/categorias');
       setCategorias(responseCategorias.data);
 
       // Si es modo edición, cargar el producto
       if (esModoEdicion && id) {
-        const responseProducto = await axios.get(`${API_URL}/productos/${id}`);
+        const responseProducto = await apiClient.get(`/productos/${id}`);
         setProducto(responseProducto.data);
       } else {
         setProducto(productoVacio);
@@ -87,29 +88,34 @@ export default function FormularioProducto() {
 
     try {
       const productoFinal = {
-        ...producto,
         nombre: producto.nombre.trim(),
         descripcion: producto.descripcion?.trim() || '',
         precio: Number(producto.precio),
+        precioConDescuento: producto.precioConDescuento ? Number(producto.precioConDescuento) : null,
         stock: Number(producto.stock),
+        stockCritico: producto.stockCritico ? Number(producto.stockCritico) : 10,
         categoria: producto.categoria,
-        imagen: producto.imagen || 'https://via.placeholder.com/400x300?text=Sin+Imagen'
+        imagen: producto.imagen || 'https://via.placeholder.com/400x300?text=Sin+Imagen',
+        origen: producto.origen || '',
+        unidad: producto.unidad || 'unidad',
+        etiqueta: producto.etiqueta || null
       };
 
       if (esModoEdicion && id) {
         // Actualizar producto existente
-        await axios.put(`${API_URL}/productos/${id}`, productoFinal);
+        await apiClient.put(`/productos/${id}`, productoFinal);
         showNotification('¡Producto actualizado correctamente!', 'success');
       } else {
         // Crear nuevo producto
-        await axios.post(`${API_URL}/productos`, productoFinal);
+        await apiClient.post('/productos', productoFinal);
         showNotification('¡Producto creado correctamente!', 'success');
       }
 
       navigate('/admin/productos');
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error al guardar producto:", error);
-      showNotification('Error al guardar el producto.', 'error');
+      const mensaje = error.response?.data?.mensaje || 'Error al guardar el producto.';
+      showNotification(mensaje, 'error');
     }
   };
 
@@ -193,7 +199,7 @@ export default function FormularioProducto() {
             </div>
 
             <div className="row">
-              <div className="col-md-6 mb-3">
+              <div className="col-md-4 mb-3">
                 <label htmlFor="precio" className="form-label">Precio (CLP) *</label>
                 <input
                   type="number"
@@ -210,7 +216,7 @@ export default function FormularioProducto() {
                   Precio final: {formatearPrecio(producto.precio || 0)}
                 </small>
               </div>
-              <div className="col-md-6 mb-3">
+              <div className="col-md-4 mb-3">
                 <label htmlFor="stock" className="form-label">Stock (unidades) *</label>
                 <input
                   type="number"
@@ -228,6 +234,45 @@ export default function FormularioProducto() {
                     Stock bajo
                   </small>
                 )}
+              </div>
+              <div className="col-md-4 mb-3">
+                <label htmlFor="stockCritico" className="form-label">Stock Crítico</label>
+                <input
+                  type="number"
+                  className="form-control"
+                  id="stockCritico"
+                  name="stockCritico"
+                  value={producto.stockCritico || 10}
+                  onChange={handleChange}
+                  min="0"
+                />
+              </div>
+            </div>
+
+            <div className="row">
+              <div className="col-md-6 mb-3">
+                <label htmlFor="origen" className="form-label">Origen</label>
+                <input
+                  type="text"
+                  className="form-control"
+                  id="origen"
+                  name="origen"
+                  value={producto.origen || ''}
+                  onChange={handleChange}
+                  placeholder="Ej: Artesanal"
+                />
+              </div>
+              <div className="col-md-6 mb-3">
+                <label htmlFor="unidad" className="form-label">Unidad</label>
+                <input
+                  type="text"
+                  className="form-control"
+                  id="unidad"
+                  name="unidad"
+                  value={producto.unidad || 'unidad'}
+                  onChange={handleChange}
+                  placeholder="Ej: unidad, kg, litro"
+                />
               </div>
             </div>
 
