@@ -1,94 +1,136 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import { createContext, useState, useEffect, useContext } from 'react';
+// CORRECCIÓN PRINCIPAL: Importar ReactNode explícitamente como 'type'
+import type { ReactNode } from 'react'; 
+import { api, authAPI } from '../services/api';
 import type { Usuario } from '../types';
-import { authAPI } from '../services/api';
 
+// Interfaces para los datos de entrada
+interface AuthLoginData {
+  correo: string;
+  contrasena: string;
+}
+
+interface AuthRegistroData {
+  rut: string;
+  nombre: string;
+  apellidos?: string;
+  correo: string;
+  contrasena: string;
+  region?: string;
+  comuna?: string;
+  direccion?: string;
+}
+
+// Interfaz del Contexto
 interface AuthContextType {
   usuario: Usuario | null;
   login: (correo: string, contrasena: string) => Promise<void>;
-  register: (userData: {
-    rut: string;
-    nombre: string;
-    apellidos: string;
-    correo: string;
-    contrasena: string;
-    region: string;
-    comuna: string;
-    direccion?: string;
-  }) => Promise<void>;
-  updateUser: (usuario: Usuario) => void;
+  register: (data: AuthRegistroData) => Promise<void>;
   logout: () => void;
+  updateUser: (usuario: Partial<Usuario>) => Promise<void>;
   isAuthenticated: boolean;
+  loading: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+// Interfaz para las props del Provider
+interface AuthProviderProps {
+  children: ReactNode;
+}
+
+export const AuthProvider = ({ children }: AuthProviderProps) => {
   const [usuario, setUsuario] = useState<Usuario | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const token = localStorage.getItem('token');
-    const usuarioGuardado = localStorage.getItem('usuario');
-    
-    if (token && usuarioGuardado && usuarioGuardado !== 'undefined') {
-      try {
-        setUsuario(JSON.parse(usuarioGuardado));
-      } catch (error) {
-        console.error('Error al parsear usuario:', error);
-        localStorage.removeItem('token');
-        localStorage.removeItem('usuario');
+    const checkAuth = async () => {
+      const token = localStorage.getItem('token');
+      if (token) {
+        try {
+          const { data } = await api.get('/usuarios/perfil');
+          setUsuario(data);
+        } catch (error) {
+          console.error('Error de sesión:', error);
+          logout();
+        }
       }
-    }
+      setLoading(false);
+    };
+    checkAuth();
   }, []);
 
   const login = async (correo: string, contrasena: string) => {
     try {
       const response = await authAPI.login({ correo, contrasena });
-      const { token, mensaje, tipo, ...usuarioData } = response.data;
+      const { token, ...userData } = response.data;
       
       localStorage.setItem('token', token);
-      localStorage.setItem('usuario', JSON.stringify(usuarioData));
-      setUsuario(usuarioData as Usuario);
+      
+      // Aseguramos que el objeto cumpla con la interfaz Usuario
+      const usuarioLogueado: Usuario = {
+        id: userData.id,
+        rut: userData.rut,
+        nombre: userData.nombre,
+        apellidos: userData.apellidos,
+        correo: userData.correo,
+        contrasena: "", 
+        esAdmin: userData.esAdmin,
+        esVendedor: userData.esVendedor,
+        puntos: userData.puntos,
+        region: userData.region,
+        comuna: userData.comuna,
+        direccion: userData.direccion
+      };
+      
+      setUsuario(usuarioLogueado);
     } catch (error: any) {
       throw new Error(error.response?.data?.mensaje || 'Error al iniciar sesión');
     }
   };
 
-  const register = async (userData: any) => {
+  const register = async (data: AuthRegistroData) => {
     try {
-      const response = await authAPI.register(userData);
-      const { token, mensaje, tipo, ...usuarioData } = response.data;
+      const response = await authAPI.register(data);
+      const { token } = response.data;
       
       localStorage.setItem('token', token);
-      localStorage.setItem('usuario', JSON.stringify(usuarioData));
-      setUsuario(usuarioData as Usuario);
+      
+      const perfilResponse = await api.get('/usuarios/perfil');
+      setUsuario(perfilResponse.data);
     } catch (error: any) {
       throw new Error(error.response?.data?.mensaje || 'Error al registrar usuario');
     }
   };
 
-  const updateUser = (usuarioActualizado: Usuario) => {
-    localStorage.setItem('usuario', JSON.stringify(usuarioActualizado));
-    setUsuario(usuarioActualizado);
-  };
-
   const logout = () => {
     localStorage.removeItem('token');
-    localStorage.removeItem('usuario');
     setUsuario(null);
   };
 
+  const updateUser = async (datos: Partial<Usuario>) => {
+    try {
+      const { data } = await api.put('/usuarios/perfil', datos);
+      if (data.usuario) {
+        setUsuario(data.usuario);
+      }
+    } catch (error) {
+      console.error("Error actualizando perfil", error);
+      throw error;
+    }
+  };
+
   return (
-    <AuthContext.Provider
-      value={{
-        usuario,
-        login,
-        register,
-        updateUser,
-        logout,
-        isAuthenticated: !!usuario,
-      }}
-    >
-      {children}
+    <AuthContext.Provider value={{ 
+      usuario, 
+      login, 
+      register, 
+      logout, 
+      updateUser,
+      isAuthenticated: !!usuario, 
+      loading 
+    }}>
+      {!loading && children}
     </AuthContext.Provider>
   );
 };

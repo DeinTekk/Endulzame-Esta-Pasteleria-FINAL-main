@@ -16,11 +16,16 @@ function MenuAutenticacion() {
         </Dropdown.Toggle>
         <Dropdown.Menu align="end">
           <Dropdown.Item onClick={() => navigate('/perfil')}>Mi Perfil</Dropdown.Item>
+          
           {usuario.esAdmin && (
             <Dropdown.Item onClick={() => navigate('/admin')}>Panel de Admin</Dropdown.Item>
           )}
+          
           <Dropdown.Divider />
-          <Dropdown.Item onClick={logout}>Cerrar sesión</Dropdown.Item>
+          <Dropdown.Item onClick={() => {
+            logout();
+            navigate('/');
+          }}>Cerrar sesión</Dropdown.Item>
         </Dropdown.Menu>
       </Dropdown>
     );
@@ -95,7 +100,6 @@ function MenuCarrito() {
   );
 }
 
-
 export default function Layout() {
   return (
     <>
@@ -124,7 +128,6 @@ export default function Layout() {
       </Navbar>
 
       <Outlet />
-
 
       <footer className="mt-5">
         © 2025 Endúlzame esta — Dulzura artesanal en cada bocado
